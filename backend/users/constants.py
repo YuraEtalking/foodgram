@@ -1,13 +1,13 @@
 """Константы приложения users"""
 
 # Максимальная длинна адреса электронной почты.
-MAX_EMAIL_LENGTH: int = 254
+EMAIL_MAX_LENGTH: int = 254
 
 # Максимальная длина username.
-MAX_USERNAME_LENGTH: int = 150
+USERNAME_MAX_LENGTH: int = 150
 
 # Максимальная длина имени пользователя.
-MAX_FIRST_NAME_LENGTH: int = 150
+FIRST_NAME_MAX_LENGTH: int = 150
 
 # Максимальная длина фамилии пользователя.
-MAX_LAST_NAME_LENGTH: int = 150
+LAST_NAME_MAX_LENGTH: int = 150

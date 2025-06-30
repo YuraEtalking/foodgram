@@ -1,0 +1,14 @@
+"""Константы приложения recipes"""
+
+
+# Максимальная длинна название ингридиента.
+INGREDIENT_MAX_LENGTH: int = 200
+
+# Максимальная длинна единицы измерения.
+MEASUREMENT_UNIT_MAX_LENGTH: int = 50
+
+# Максимальная длинна тега.
+TAG_MAX_LENGTH: int = 50
+
+# Максимальная длинна названия рецепта.
+RECIPE_NAME_MAX_LENGTH: int = 200
