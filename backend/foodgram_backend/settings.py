@@ -112,7 +112,7 @@ DEFAULT_AVATAR_URL = STATIC_URL + 'images/userpic-icon.jpg'
 
 AUTH_USER_MODEL = 'users.User'
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru'
 
 TIME_ZONE = 'UTC'
 

@@ -55,6 +55,7 @@ class CustomUserSerializer(UserSerializer):
             'avatar',
             'is_subscribed',
         )
+        # todo добавить поля recipes, recipes_count и пагинацию.
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -72,6 +73,7 @@ class CustomUserSerializer(UserSerializer):
             if request:
                 return request.build_absolute_uri(settings.DEFAULT_AVATAR_URL)
             return settings.DEFAULT_AVATAR_URL
+
 
 class AvatarUpdateSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField()
