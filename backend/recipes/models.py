@@ -57,6 +57,9 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингредиенты'
         ordering = ['name']
 
+    def __str__(self):
+        return self.name
+
 
 class Recipe(models.Model):
     tags = models.ManyToManyField(
@@ -109,12 +112,16 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveSmallIntegerField(verbose_name='Количество')
 
     class Meta:
+        verbose_name = 'ингредиент'
+        verbose_name_plural = 'Ингредиенты'
         constraints = [
             models.UniqueConstraint(
                 name='unique_recipe_ingredient',
                 fields=['recipe', 'ingredient']
             ),
         ]
+
+
 
 class Favorite(models.Model):
     user = models.ForeignKey(
