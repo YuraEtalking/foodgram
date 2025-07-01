@@ -55,6 +55,7 @@ class CustomUserSerializer(UserSerializer):
             'avatar',
             'is_subscribed',
         )
+        # todo добавить поля recipes, recipes_count и пагинацию.
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')

@@ -2,7 +2,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from .views.users import CustomUserViewSet
-from .views.recipes import IngredientViewSet, TagViewSet
+from .views.recipes import IngredientViewSet, RecipeViewSet, TagViewSet
 
 
 router = DefaultRouter()
@@ -10,6 +10,7 @@ router = DefaultRouter()
 router.register(r'users', CustomUserViewSet)
 router.register(r'ingredients', IngredientViewSet)
 router.register(r'tags', TagViewSet)
+router.register(r'recipes', RecipeViewSet)
 
 
 urlpatterns = [

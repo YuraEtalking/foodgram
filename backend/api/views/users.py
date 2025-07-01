@@ -24,6 +24,10 @@ class CustomUserViewSet(DjoserUserViewSet):
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, id=id)
         if request.method == 'POST':
+            if request.user == author:
+                return Response(
+                    {'error': 'Нельзя подписаться на себя'},
+                    status=status.HTTP_400_BAD_REQUEST)
             subscription, created = Subscription.objects.get_or_create(
                 user=request.user,
                 author=author

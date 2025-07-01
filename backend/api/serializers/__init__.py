@@ -1,5 +1,5 @@
 from .users import AvatarUpdateSerializer, CustomUserCreateSerializer, CustomUserSerializer
-from .recipes import IngredientSerializer, TagSerializer
+from .recipes import IngredientSerializer, RecipeSerializer, TagSerializer
 
 
 __all__ = [
@@ -7,5 +7,6 @@ __all__ = [
     'CustomUserCreateSerializer',
     'CustomUserSerializer',
     'IngredientSerializer',
+    'RecipeSerializer',
     'TagSerializer'
 ]
