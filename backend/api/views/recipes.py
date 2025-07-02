@@ -1,16 +1,23 @@
 from rest_framework import viewsets
+from rest_framework.pagination import PageNumberPagination
 
 from recipes.models import Ingredient, Recipe, Tag
 from api.serializers import (
     IngredientSerializer,
-    RecipeSerializer,
+    RecipeCreateSerializer,
+    RecipeReadingSerializer,
     TagSerializer
 )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    pagination_class = PageNumberPagination
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'partial_update']:
+            return RecipeCreateSerializer
+        return RecipeReadingSerializer
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
