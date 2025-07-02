@@ -1,3 +1,5 @@
+import hashlib
+
 from rest_framework import serializers
 
 from recipes.models import Ingredient, Favorite, Recipe, RecipeIngredient, Tag
@@ -19,7 +21,9 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
+    )
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
@@ -122,5 +126,26 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        # Используем другой сериализатор для вывода
         return RecipeReadingSerializer(instance, context=self.context).data
+
+
+class ShortLinkSerializer(serializers.Serializer):
+    short_link = serializers.SerializerMethodField(source='*')
+
+    def get_short_link(self, obj):
+        short_code = self.generate_short_code(obj.id)
+        request = self.context.get('request')
+        domain = request.get_host()
+        protocol = 'https' if request.is_secure() else 'http'
+        return f'{protocol}://{domain}/s/{short_code}'
+
+    def generate_short_code(self, recipe_id):
+        hash_object = hashlib.md5(str(recipe_id).encode())
+        return hash_object.hexdigest()[:3]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return {'short-link': data['short_link']}
+
+
+

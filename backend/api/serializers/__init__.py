@@ -7,6 +7,7 @@ from .recipes import (
     IngredientSerializer,
     RecipeCreateSerializer,
     RecipeReadingSerializer,
+    ShortLinkSerializer,
     TagSerializer
 )
 
@@ -18,5 +19,6 @@ __all__ = [
     'IngredientSerializer',
     'RecipeCreateSerializer',
     'RecipeReadingSerializer',
+    'ShortLinkSerializer',
     'TagSerializer'
 ]
