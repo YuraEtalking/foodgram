@@ -2,8 +2,15 @@ import hashlib
 
 from rest_framework import serializers
 
-from recipes.models import Ingredient, Favorite, Recipe, RecipeIngredient, Tag
-from .users import CustomUserSerializer
+from recipes.models import (
+    Ingredient,
+    Favorite,
+    Recipe,
+    RecipeIngredient,
+    ShoppingList,
+    Tag
+)
+from .users import Base64ImageField, CustomUserSerializer
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -66,6 +73,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
             return obj.in_shopping_lists.filter(user=request.user).exists()
         return False
 
+# todo Названия файлов от id рецепта или названия
 class RecipeCreateSerializer(serializers.ModelSerializer):
     ingredients = serializers.ListField(
         child=serializers.DictField(),
@@ -75,6 +83,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe
@@ -148,4 +157,7 @@ class ShortLinkSerializer(serializers.Serializer):
         return {'short-link': data['short_link']}
 
 
-
+class RecipeShortResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ['id', 'name', 'image', 'cooking_time']
