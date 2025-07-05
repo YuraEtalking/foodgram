@@ -1,11 +1,13 @@
 import base64
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 
-from users.models import User
+
+User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
