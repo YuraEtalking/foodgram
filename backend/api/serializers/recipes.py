@@ -73,7 +73,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
             return obj.in_shopping_lists.filter(user=request.user).exists()
         return False
 
-# todo Названия файлов от id рецепта или названия
+
 class RecipeCreateSerializer(serializers.ModelSerializer):
     ingredients = serializers.ListField(
         child=serializers.DictField(),
