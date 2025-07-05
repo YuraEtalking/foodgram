@@ -77,13 +77,17 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
 class RecipeCreateSerializer(serializers.ModelSerializer):
     ingredients = serializers.ListField(
         child=serializers.DictField(),
-        write_only=True
+        write_only=True,
+        required=True,
+        allow_empty=False
     )
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
-        many=True
+        many=True,
+        required=True,
+        allow_empty=False
     )
-    image = Base64ImageField()
+    image = Base64ImageField(required=True)
 
     class Meta:
         model = Recipe
@@ -95,6 +99,29 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time',
         )
+        extra_kwargs = {
+            'name': {'required': True, 'allow_blank': False},
+            'text': {'required': True, 'allow_blank': False},
+            'cooking_time': {'required': True},
+        }
+
+    def validate_ingredients(self, value):
+        """Дополнительная валидация для ingredients"""
+        if not value:
+            raise serializers.ValidationError(
+                'Список ингредиентов не может быть пустым')
+
+        for ingredient in value:
+            if 'id' not in ingredient or 'amount' not in ingredient:
+                raise serializers.ValidationError(
+                    'Каждый ингредиент должен содержать "id" и "amount"'
+                )
+            if not isinstance(ingredient['amount'], (int, float)) or \
+                    ingredient['amount'] <= 0:
+                raise serializers.ValidationError(
+                    'Количество ингредиента должно быть положительным числом'
+                )
+        return value
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')

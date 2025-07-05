@@ -1,26 +1,45 @@
+from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet as DjoserUserViewSet
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status, permissions
+from rest_framework import status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from api.serializers import AvatarUpdateSerializer, CustomUserSerializer
-from users.models import Subscription, User
-from yaml import serialize
+from users.models import Subscription
+
+
+User = get_user_model()
 
 
 class CustomUserViewSet(DjoserUserViewSet):
-
     def list(self, request):
         users_list = User.objects.all()
+        page = self.paginate_queryset(users_list)
         serializer = CustomUserSerializer(
-            users_list,
+            page,
             many=True,
             context={'request': request}
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=['delete', 'post'])
+    @action(['get',], detail=False)
+    def me(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Пользователь не авторизован.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().me(request, *args, **kwargs)
+
+
+    @action(
+        detail=True,
+        methods=['delete', 'post'],
+        permission_classes=[IsAuthenticated],
+    )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, id=id)
         if request.method == 'POST':
@@ -58,7 +77,11 @@ class CustomUserViewSet(DjoserUserViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=False, methods=['get',])
+    @action(
+        detail=False,
+        methods=['get',],
+        permission_classes=[IsAuthenticated],
+    )
     def subscriptions(self, request):
         subscriptions = Subscription.objects.filter(user=request.user)
         authors = [subscription.author for subscription in subscriptions]
@@ -69,7 +92,12 @@ class CustomUserViewSet(DjoserUserViewSet):
         )
         return Response(serializer.data)
 
-    @action(detail=False, methods=['delete', 'patch'], url_path='me/avatar')
+    @action(
+        detail=False,
+        methods=['delete', 'patch'],
+        permission_classes=[IsAuthenticated],
+        url_path='me/avatar'
+    )
     def update_and_delete_avatar(self, request):
         user = request.user
         if request.method == 'PATCH':

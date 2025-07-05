@@ -1,13 +1,13 @@
-# from django.contrib.admin import action
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import action
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 
 from recipes.models import (
     Ingredient,
@@ -25,7 +25,6 @@ from api.serializers import (
     ShortLinkSerializer,
     TagSerializer
 )
-from yaml import serialize
 
 
 class RecipeShortLinkView(APIView):
@@ -48,6 +47,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageNumberPagination
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+
+        return [permission() for permission in permission_classes]
+
     def get_serializer_class(self):
         if self.action in ['create', 'partial_update']:
             return RecipeCreateSerializer
@@ -56,7 +63,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get'],
-        # permission_classes=[IsAuthenticated],
+        permission_classes=[IsAuthenticated],
         url_path='download_shopping_cart'
     )
     def download_shopping_list(self, request):
@@ -94,6 +101,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated],
         url_path='(?P<action_type>shopping_cart|favorite)'
     )
     def manage_shopping_list_and_favorite_recipe(
