@@ -11,6 +11,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from recipes.models import (
     Ingredient,
+    Favorite,
     Recipe,
     RecipeIngredient,
     ShoppingList,
@@ -93,17 +94,35 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        url_path='shopping_cart'
+        url_path='(?P<action_type>shopping_cart|favorite)'
     )
-    def add_recipe_in_shopping_list(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, pk=pk)
+    def manage_shopping_list_and_favorite_recipe(
+            self,
+            request,
+            pk=None,
+            action_type=None
+    ):
+        recipe = self.get_object()
+        user = request.user
+        serializer_class = RecipeShortResponseSerializer
+
+        if action_type == 'shopping_cart':
+            model_class = ShoppingList
+            message = 'списке покупок'
+        elif action_type == 'favorite':
+            model_class = Favorite
+            message = 'избранном'
+        else:
+            return Response({'error': 'Неверный запрос'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         if request.method == 'POST':
-            shoppinglist, created = ShoppingList.objects.get_or_create(
-                user=request.user,
+            obj, created = model_class.objects.get_or_create(
+                user=user,
                 recipe=recipe
             )
             if created:
-                serializer = RecipeShortResponseSerializer(
+                serializer = serializer_class(
                     recipe,
                     context={'request': request}
                 )
@@ -112,30 +131,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_201_CREATED
                 )
             return Response(
-                {'error': 'Уже в списке покупок'},
+                {'error': f'Рецепт уже в {message}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         elif request.method == 'DELETE':
-            shoppinglist = get_object_or_404(
-                ShoppingList,
+            obj = get_object_or_404(
+                model_class,
                 user=request.user,
                 recipe=recipe
             )
 
-            if shoppinglist:
-                shoppinglist.delete()
+            if obj:
+                obj.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(
-                {'error': 'рецепта нет в списке покупок'},
+                {'error': f'Рецепта нет в {message}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     http_method_names = ['get',]
+
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
