@@ -1,3 +1,4 @@
+"""Сериализаторы для приложения рецептов."""
 import hashlib
 
 from rest_framework import serializers
@@ -14,29 +15,34 @@ from .users import Base64ImageField, CustomUserSerializer
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели ингридиентов"""
     class Meta:
         model = Ingredient
         fields = '__all__'
 
 
 class TagSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели тегов"""
     class Meta:
         model = Tag
         fields = '__all__'
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели RecipeIngredient"""
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
     )
+
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeReadingSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Recipe с вложенными и дополнительными полями."""
     ingredients = RecipeIngredientSerializer(
         many=True,
         read_only=True,
@@ -61,17 +67,23 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
             'cooking_time',
         )
 
-    def get_is_favorited(self, obj):
+    def check_user_relation(self, obj, relation_name):
+        """Cуществует ли запись в отношении relation_name для пользователя."""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.favorited_by.filter(user=request.user).exists()
+            return getattr(
+                obj,
+                relation_name
+            ).filter(user=request.user).exists()
         return False
 
+    def get_is_favorited(self, obj):
+        """Проверяем находится ли рецепт в избранном."""
+        return self.check_user_relation(obj, 'favorited_by')
+
     def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.in_shopping_lists.filter(user=request.user).exists()
-        return False
+        """Проверяем находится ли рецепт в списке покупок."""
+        return self.check_user_relation(obj, 'in_shopping_lists')
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):

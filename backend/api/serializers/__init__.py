@@ -1,3 +1,4 @@
+"""Модуль, предоставляющий сериализаторы для пользователей и рецептов."""
 from .users import (
     AvatarUpdateSerializer,
     CustomUserCreateSerializer,
