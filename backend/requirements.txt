@@ -8,3 +8,4 @@ PyYAML==6.0
 django-cors-headers==4.5.0
 flake8==5.0.4
 flake8-docstrings==1.7.0
+django-filter==23.2
