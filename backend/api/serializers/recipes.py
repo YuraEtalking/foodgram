@@ -1,42 +1,51 @@
+"""Сериализаторы для приложения рецептов."""
 import hashlib
 
 from rest_framework import serializers
 
+from .fields import Base64ImageField
 from recipes.models import (
     Ingredient,
-    Favorite,
     Recipe,
     RecipeIngredient,
-    ShoppingList,
     Tag
 )
-from .users import Base64ImageField, CustomUserSerializer
+from .users import CustomUserSerializer
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели ингридиентов"""
+
     class Meta:
         model = Ingredient
         fields = '__all__'
 
 
 class TagSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели тегов"""
+
     class Meta:
         model = Tag
         fields = '__all__'
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели RecipeIngredient"""
+
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
     )
+
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeReadingSerializer(serializers.ModelSerializer):
+    """Сериализатор для чтения рецепта."""
+
     ingredients = RecipeIngredientSerializer(
         many=True,
         read_only=True,
@@ -46,6 +55,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
     author = CustomUserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+
     class Meta:
         model = Recipe
         fields = (
@@ -61,20 +71,28 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
             'cooking_time',
         )
 
-    def get_is_favorited(self, obj):
+    def check_user_relation(self, obj, relation_name):
+        """Существует ли запись в отношении relation_name для пользователя."""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.favorited_by.filter(user=request.user).exists()
+            return getattr(
+                obj,
+                relation_name
+            ).filter(user=request.user).exists()
         return False
 
+    def get_is_favorited(self, obj):
+        """Проверяем находится ли рецепт в избранном."""
+        return self.check_user_relation(obj, 'favorited_by')
+
     def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.in_shopping_lists.filter(user=request.user).exists()
-        return False
+        """Проверяем находится ли рецепт в списке покупок."""
+        return self.check_user_relation(obj, 'in_shopping_lists')
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания рецепта."""
+
     ingredients = serializers.ListField(
         child=serializers.DictField(),
         write_only=True,
@@ -116,14 +134,15 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Каждый ингредиент должен содержать "id" и "amount"'
                 )
-            if not isinstance(ingredient['amount'], (int, float)) or \
-                    ingredient['amount'] <= 0:
+            if not isinstance(ingredient['amount'], int) or \
+                    ingredient['amount'] < 0:
                 raise serializers.ValidationError(
                     'Количество ингредиента должно быть положительным числом'
                 )
         return value
 
     def create(self, validated_data):
+        """Переопределяем create для обработки связанных данных."""
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 
@@ -139,36 +158,41 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             )
         return recipe
 
-    def update(self, instance, validated_data):
+    def update(self, recipe, validated_data):
+        """Переопределяем update для обработки обновления связанных данных."""
         ingredients = validated_data.pop('ingredients', None)
         tags = validated_data.pop('tags', None)
 
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+            setattr(recipe, attr, value)
+        recipe.save()
 
         if tags is not None:
-            instance.tags.set(tags)
+            recipe.tags.set(tags)
 
         if ingredients is not None:
-            instance.recipeingredient_set.all().delete()
+            recipe.recipeingredient_set.all().delete()
 
             for ingredient in ingredients:
                 RecipeIngredient.objects.create(
-                    recipe=instance,
+                    recipe=recipe,
                     ingredient_id=ingredient['id'],
                     amount=ingredient['amount']
                 )
-        return instance
+        return recipe
 
-    def to_representation(self, instance):
-        return RecipeReadingSerializer(instance, context=self.context).data
+    def to_representation(self, recipe):
+        """Указываем какой сериализатор должен формировать ответ."""
+        return RecipeReadingSerializer(recipe, context=self.context).data
 
 
 class ShortLinkSerializer(serializers.Serializer):
+    """Сериализатор для формирования короткой ссылки на рецепт."""
+
     short_link = serializers.SerializerMethodField(source='*')
 
     def get_short_link(self, obj):
+        """Формирует короткую ссылку."""
         short_code = self.generate_short_code(obj.id)
         request = self.context.get('request')
         domain = request.get_host()
@@ -176,15 +200,19 @@ class ShortLinkSerializer(serializers.Serializer):
         return f'{protocol}://{domain}/s/{short_code}'
 
     def generate_short_code(self, recipe_id):
+        """Используем часть хеша MD5."""
         hash_object = hashlib.md5(str(recipe_id).encode())
-        return hash_object.hexdigest()[:3]
+        return hash_object.hexdigest()[:6]
 
     def to_representation(self, instance):
+        """Меняем short_link на short-link, для соответствия redoc"""
         data = super().to_representation(instance)
         return {'short-link': data['short_link']}
 
 
 class RecipeShortResponseSerializer(serializers.ModelSerializer):
+    """Формирует ответ при добавлении в избранное или список покупок"""
+
     class Meta:
         model = Recipe
         fields = ['id', 'name', 'image', 'cooking_time']

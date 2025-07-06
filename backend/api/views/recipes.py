@@ -1,22 +1,18 @@
+"""Представления для приложения рецептов."""
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import (
+    filters,
+    status,
+    viewsets
+)
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 
-from recipes.models import (
-    Ingredient,
-    Favorite,
-    Recipe,
-    RecipeIngredient,
-    ShoppingList,
-    Tag
-)
 from api.serializers import (
     IngredientSerializer,
     RecipeCreateSerializer,
@@ -25,10 +21,23 @@ from api.serializers import (
     ShortLinkSerializer,
     TagSerializer
 )
+from recipes.filters import RecipeFilter
+from recipes.pagination import LimitPageNumberPagination
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingList,
+    Tag
+)
 
 
 class RecipeShortLinkView(APIView):
+    """Возвращает короткую ссылку на рецепт."""
+
     def get(self, request, pk):
+        """Обрабатывает GET-запрос для получения короткой ссылки на рецепт."""
         try:
             recipe = Recipe.objects.get(pk=pk)
             serializer = ShortLinkSerializer(
@@ -44,10 +53,16 @@ class RecipeShortLinkView(APIView):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    """Представление для рецептов."""
+
     queryset = Recipe.objects.all()
-    pagination_class = PageNumberPagination
+    pagination_class = LimitPageNumberPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
+        """Возвращает разрешения в зависимости от действия."""
         if self.action in ['list', 'retrieve']:
             permission_classes = [AllowAny]
         else:
@@ -56,6 +71,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
+        """Возвращает сериализатор в зависимости от действия."""
         if self.action in ['create', 'partial_update']:
             return RecipeCreateSerializer
         return RecipeReadingSerializer
@@ -67,6 +83,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart'
     )
     def download_shopping_list(self, request):
+        """Обрабатывает GET-запрос для скачивания списка покупок."""
         shopping_list_recipe = ShoppingList.objects.filter(
             user=request.user
         ).values_list('recipe_id', flat=True)
@@ -110,6 +127,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             pk=None,
             action_type=None
     ):
+        """Обрабатывает запросы для списка покупок и избранными рецептами."""
         recipe = self.get_object()
         user = request.user
         serializer_class = RecipeShortResponseSerializer
@@ -159,12 +177,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
+    """Представление для ингредиентов."""
+
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    http_method_names = ['get',]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    http_method_names = ['get']
 
 
 class TagViewSet(viewsets.ModelViewSet):
+    """Представление для тегов."""
+
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    http_method_names = ['get',]
+    http_method_names = ['get']

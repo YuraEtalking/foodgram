@@ -8,7 +8,8 @@ from .constants import (
     MEASUREMENT_UNIT_MAX_LENGTH,
     RECIPE_NAME_MAX_LENGTH,
     TAG_MAX_LENGTH,
-    )
+)
+
 
 User = get_user_model()
 
@@ -72,8 +73,8 @@ class Recipe(models.Model):
         on_delete=models.SET_NULL,
         verbose_name='Автор',
         related_name='recipes',
-        null = True,
-        blank = True,
+        null=True,
+        blank=True,
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -106,9 +107,14 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
+
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент')
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        verbose_name='Ингредиент'
+    )
     amount = models.PositiveSmallIntegerField(verbose_name='Количество')
 
     class Meta:
@@ -120,7 +126,6 @@ class RecipeIngredient(models.Model):
                 fields=['recipe', 'ingredient']
             ),
         ]
-
 
 
 class Favorite(models.Model):
