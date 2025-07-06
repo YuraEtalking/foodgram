@@ -1,9 +1,5 @@
 """Модуль, предоставляющий сериализаторы для пользователей и рецептов."""
-from .users import (
-    AvatarUpdateSerializer,
-    CustomUserCreateSerializer,
-    CustomUserSerializer
-)
+from .fields import Base64ImageField
 from .recipes import (
     IngredientSerializer,
     RecipeCreateSerializer,
@@ -12,10 +8,17 @@ from .recipes import (
     ShortLinkSerializer,
     TagSerializer
 )
+from .users import (
+    AvatarUpdateSerializer,
+    CustomUserCreateSerializer,
+    CustomUserSerializer,
+    SubscriptionsSerializer
+)
 
 
 __all__ = [
     'AvatarUpdateSerializer',
+    'Base64ImageField',
     'CustomUserCreateSerializer',
     'CustomUserSerializer',
     'IngredientSerializer',
@@ -23,5 +26,6 @@ __all__ = [
     'RecipeReadingSerializer',
     'RecipeShortResponseSerializer',
     'ShortLinkSerializer',
+    'SubscriptionsSerializer',
     'TagSerializer'
 ]

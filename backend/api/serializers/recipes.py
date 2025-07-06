@@ -3,19 +3,19 @@ import hashlib
 
 from rest_framework import serializers
 
+from .fields import Base64ImageField
 from recipes.models import (
     Ingredient,
-    Favorite,
     Recipe,
     RecipeIngredient,
-    ShoppingList,
     Tag
 )
-from .users import Base64ImageField, CustomUserSerializer
+from .users import CustomUserSerializer
 
 
 class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели ингридиентов"""
+
     class Meta:
         model = Ingredient
         fields = '__all__'
@@ -23,6 +23,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для модели тегов"""
+
     class Meta:
         model = Tag
         fields = '__all__'
@@ -30,6 +31,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели RecipeIngredient"""
+
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -43,6 +45,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 class RecipeReadingSerializer(serializers.ModelSerializer):
     """Сериализатор для чтения рецепта."""
+
     ingredients = RecipeIngredientSerializer(
         many=True,
         read_only=True,
@@ -52,6 +55,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
     author = CustomUserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+
     class Meta:
         model = Recipe
         fields = (
@@ -88,6 +92,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания рецепта."""
+
     ingredients = serializers.ListField(
         child=serializers.DictField(),
         write_only=True,
@@ -183,6 +188,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 class ShortLinkSerializer(serializers.Serializer):
     """Сериализатор для формирования короткой ссылки на рецепт."""
+
     short_link = serializers.SerializerMethodField(source='*')
 
     def get_short_link(self, obj):
@@ -206,6 +212,7 @@ class ShortLinkSerializer(serializers.Serializer):
 
 class RecipeShortResponseSerializer(serializers.ModelSerializer):
     """Формирует ответ при добавлении в избранное или список покупок"""
+
     class Meta:
         model = Recipe
         fields = ['id', 'name', 'image', 'cooking_time']

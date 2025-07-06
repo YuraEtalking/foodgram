@@ -1,32 +1,18 @@
-import base64
-
+"""Сериализаторы для приложения users"""
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
+
+from .fields import Base64ImageField
 
 
 User = get_user_model()
 
 
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
-        return super().to_internal_value(data)
-
-
 class CustomUserCreateSerializer(UserCreateSerializer):
-    """
-    Используется для регистрации новых пользователей.
+    """Переопределяем поля и модель для регистрации новых пользователей"""
 
-    Переопределяет только модель и поля.
-    """
     class Meta(UserCreateSerializer.Meta):
         model = User
         fields = (
@@ -40,6 +26,8 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 
 
 class CustomUserSerializer(UserSerializer):
+    """Сериализатор для пользователей."""
+
     avatar = serializers.SerializerMethodField(
         'get_avatar_url',
         read_only=True,
@@ -54,17 +42,19 @@ class CustomUserSerializer(UserSerializer):
             'username',
             'first_name',
             'last_name',
-            'avatar',
             'is_subscribed',
+            'avatar',
         )
 
     def get_is_subscribed(self, obj):
+        """Возвращает, подписку автора на пользователя"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.subscribers.filter(user=request.user).exists()
         return False
 
     def get_avatar_url(self, obj):
+        """Возвращает URL аватара пользователя или URL аватара по умолчанию."""
         request = self.context.get('request')
         if obj.avatar:
             if request:
@@ -76,7 +66,48 @@ class CustomUserSerializer(UserSerializer):
             return settings.DEFAULT_AVATAR_URL
 
 
+class SubscriptionsSerializer(CustomUserSerializer):
+    """Сериализатор с добавлением полей для выдачи подписок пользователя."""
+
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta(CustomUserSerializer.Meta):
+        fields = CustomUserSerializer.Meta.fields + (
+            'recipes',
+            'recipes_count',
+        )
+
+    def get_recipes_count(self, obj):
+        """Возвращает количество рецептов пользователя."""
+        return obj.recipes.count()
+
+    def get_recipes(self, obj):
+        """Возвращает рецепты пользователя."""
+        from .recipes import RecipeShortResponseSerializer
+        request = self.context.get('request')
+        recipes_limit = None
+
+        if request:
+            try:
+                recipes_limit = int(request.query_params.get('recipes_limit'))
+            except (TypeError, ValueError):
+                recipes_limit = None
+
+        recipes_queryset = obj.recipes.all()
+        if recipes_limit:
+            recipes_queryset = recipes_queryset[:recipes_limit]
+
+        return RecipeShortResponseSerializer(
+            recipes_queryset,
+            many=True,
+            context=self.context
+        ).data
+
+
 class AvatarUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор обновления аватара."""
+
     avatar = Base64ImageField()
 
     class Meta:

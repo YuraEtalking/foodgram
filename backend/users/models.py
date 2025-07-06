@@ -12,6 +12,7 @@ from .validators import validate_username
 
 class User(AbstractUser):
     """Кастомная модель пользователя."""
+
     email = models.EmailField(
         max_length=EMAIL_MAX_LENGTH,
         unique=True,
@@ -24,12 +25,12 @@ class User(AbstractUser):
         validators=(validate_username,)
     )
     first_name = models.CharField(
-        verbose_name ='Имя',
+        verbose_name='Имя',
         max_length=FIRST_NAME_MAX_LENGTH,
         blank=False
     )
     last_name = models.CharField(
-        verbose_name ='Фамилия',
+        verbose_name='Фамилия',
         max_length=LAST_NAME_MAX_LENGTH,
         blank=False
     )
@@ -53,6 +54,7 @@ class User(AbstractUser):
 
 class Subscription(models.Model):
     """Модель подписок."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -65,7 +67,6 @@ class Subscription(models.Model):
         related_name='subscribers',  # Подписчики автора
         verbose_name='Автор'
     )
-    # Для сортировки подписок.
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата подписки'
@@ -73,7 +74,6 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.user.username} подписан на {self.author.username}'
-
 
     class Meta:
         verbose_name = 'подписка'

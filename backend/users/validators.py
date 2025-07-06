@@ -7,7 +7,7 @@ def validate_username(username):
     """
     Проверяет корректность имени.
 
-    Недопустимо имя 'me' и символы отличные от [\w.@+-]
+    Недопустимо имя 'me' и символы отличные от разрешенных.
     """
     if username == 'me':
         raise ValidationError(
