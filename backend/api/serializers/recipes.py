@@ -42,7 +42,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeReadingSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели Recipe с вложенными и дополнительными полями."""
+    """Сериализатор для чтения рецепта."""
     ingredients = RecipeIngredientSerializer(
         many=True,
         read_only=True,
@@ -68,7 +68,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
         )
 
     def check_user_relation(self, obj, relation_name):
-        """Cуществует ли запись в отношении relation_name для пользователя."""
+        """Существует ли запись в отношении relation_name для пользователя."""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return getattr(
@@ -87,6 +87,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания рецепта."""
     ingredients = serializers.ListField(
         child=serializers.DictField(),
         write_only=True,
@@ -128,14 +129,15 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Каждый ингредиент должен содержать "id" и "amount"'
                 )
-            if not isinstance(ingredient['amount'], (int, float)) or \
-                    ingredient['amount'] <= 0:
+            if not isinstance(ingredient['amount'], int) or \
+                    ingredient['amount'] < 0:
                 raise serializers.ValidationError(
                     'Количество ингредиента должно быть положительным числом'
                 )
         return value
 
     def create(self, validated_data):
+        """Переопределяем create для обработки связанных данных."""
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 
@@ -151,36 +153,40 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             )
         return recipe
 
-    def update(self, instance, validated_data):
+    def update(self, recipe, validated_data):
+        """Переопределяем update для обработки обновления связанных данных."""
         ingredients = validated_data.pop('ingredients', None)
         tags = validated_data.pop('tags', None)
 
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+            setattr(recipe, attr, value)
+        recipe.save()
 
         if tags is not None:
-            instance.tags.set(tags)
+            recipe.tags.set(tags)
 
         if ingredients is not None:
-            instance.recipeingredient_set.all().delete()
+            recipe.recipeingredient_set.all().delete()
 
             for ingredient in ingredients:
                 RecipeIngredient.objects.create(
-                    recipe=instance,
+                    recipe=recipe,
                     ingredient_id=ingredient['id'],
                     amount=ingredient['amount']
                 )
-        return instance
+        return recipe
 
-    def to_representation(self, instance):
-        return RecipeReadingSerializer(instance, context=self.context).data
+    def to_representation(self, recipe):
+        """Указываем какой сериализатор должен формировать ответ."""
+        return RecipeReadingSerializer(recipe, context=self.context).data
 
 
 class ShortLinkSerializer(serializers.Serializer):
+    """Сериализатор для формирования короткой ссылки на рецепт."""
     short_link = serializers.SerializerMethodField(source='*')
 
     def get_short_link(self, obj):
+        """Формирует короткую ссылку."""
         short_code = self.generate_short_code(obj.id)
         request = self.context.get('request')
         domain = request.get_host()
@@ -188,15 +194,18 @@ class ShortLinkSerializer(serializers.Serializer):
         return f'{protocol}://{domain}/s/{short_code}'
 
     def generate_short_code(self, recipe_id):
+        """Используем часть хеша MD5."""
         hash_object = hashlib.md5(str(recipe_id).encode())
-        return hash_object.hexdigest()[:3]
+        return hash_object.hexdigest()[:6]
 
     def to_representation(self, instance):
+        """Меняем short_link на short-link, для соответствия redoc"""
         data = super().to_representation(instance)
         return {'short-link': data['short_link']}
 
 
 class RecipeShortResponseSerializer(serializers.ModelSerializer):
+    """Формирует ответ при добавлении в избранное или список покупок"""
     class Meta:
         model = Recipe
         fields = ['id', 'name', 'image', 'cooking_time']
