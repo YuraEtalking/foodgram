@@ -1,5 +1,4 @@
 """Сериализаторы для приложения users"""
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
@@ -54,16 +53,9 @@ class CustomUserSerializer(UserSerializer):
         return False
 
     def get_avatar_url(self, obj):
-        """Возвращает URL аватара пользователя или URL аватара по умолчанию."""
-        request = self.context.get('request')
+        """Возвращает URL аватара пользователя."""
         if obj.avatar:
-            if request:
-                return request.build_absolute_uri(obj.avatar.url)
             return obj.avatar.url
-        else:
-            if request:
-                return request.build_absolute_uri(settings.DEFAULT_AVATAR_URL)
-            return settings.DEFAULT_AVATAR_URL
 
 
 class SubscriptionsSerializer(CustomUserSerializer):

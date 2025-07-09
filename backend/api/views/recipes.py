@@ -1,7 +1,9 @@
 """Представления для приложения рецептов."""
+import hashlib
+
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
     filters,
@@ -29,7 +31,8 @@ from recipes.models import (
     Recipe,
     RecipeIngredient,
     ShoppingList,
-    Tag
+    Tag,
+    ShortCodeRecipe
 )
 
 
@@ -50,6 +53,20 @@ class RecipeShortLinkView(APIView):
                 {'error': 'Рецепт не найден'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+class ShortLinkRedirectView(APIView):
+    """Перенаправляет по короткой ссылке на рецепт."""
+
+    def get(self, request, short_code):
+        from django.http import HttpResponseRedirect
+        recipe = ShortCodeRecipe.objects.filter(shortcode=short_code).first()
+        if recipe is None:
+            return Response({'error': 'Рецепт не найден'},
+                            status=status.HTTP_404_NOT_FOUND)
+        recipe_id = recipe.recipe.id
+        return HttpResponseRedirect(
+            request.build_absolute_uri(f'/recipes/{recipe_id}')
+        )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

@@ -60,7 +60,9 @@ class RecipeIngredientInline(admin.TabularInline):
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'name',
+        'display_shortcode',
         'author',
         'cooking_time',
         'text',
@@ -99,3 +101,8 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description='В избранном', ordering='favorites_count')
     def favorites_count(self, obj):
         return obj.favorites_count
+
+    def display_shortcode(self, obj):
+        shortcode_obj = obj.shortcode.first()
+        return shortcode_obj.shortcode if shortcode_obj else 'Нет кода'
+    display_shortcode.short_description = 'Короткий код'

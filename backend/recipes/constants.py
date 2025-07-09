@@ -15,3 +15,5 @@ RECIPE_NAME_MAX_LENGTH: int = 200
 
 # Объектов на страницу.
 PAGINATION_PAGE_SIZE: int = 6
+
+SHORT_CODE_LENGTH: int = 6

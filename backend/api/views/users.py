@@ -112,13 +112,13 @@ class CustomUserViewSet(DjoserUserViewSet):
 
     @action(
         detail=False,
-        methods=['delete', 'patch'],
+        methods=['delete', 'put'],
         permission_classes=[IsAuthenticated],
         url_path='me/avatar'
     )
     def update_and_delete_avatar(self, request):
         user = request.user
-        if request.method == 'PATCH':
+        if request.method == 'PUT':
             serializer = AvatarUpdateSerializer(
                 data=request.data,
                 partial=True,

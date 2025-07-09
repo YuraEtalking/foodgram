@@ -8,7 +8,8 @@ from recipes.models import (
     Ingredient,
     Recipe,
     RecipeIngredient,
-    Tag
+    Tag,
+    ShortCodeRecipe
 )
 from .users import CustomUserSerializer
 
@@ -90,15 +91,15 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
         return self.check_user_relation(obj, 'in_shopping_lists')
 
 
+class IngredientAmountSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    amount = serializers.IntegerField(min_value=1)
+
+
 class RecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания рецепта."""
 
-    ingredients = serializers.ListField(
-        child=serializers.DictField(),
-        write_only=True,
-        required=True,
-        allow_empty=False
-    )
+    ingredients = IngredientAmountSerializer(many=True, write_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
@@ -134,11 +135,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Каждый ингредиент должен содержать "id" и "amount"'
                 )
-            if not isinstance(ingredient['amount'], int) or \
-                    ingredient['amount'] < 0:
-                raise serializers.ValidationError(
-                    'Количество ингредиента должно быть положительным числом'
-                )
         return value
 
     def create(self, validated_data):
@@ -153,7 +149,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             RecipeIngredient.objects.create(
                 recipe=recipe,
-                ingredient_id=ingredient['id'],
+                ingredient=ingredient['id'],
                 amount=ingredient['amount']
             )
         return recipe
@@ -176,7 +172,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             for ingredient in ingredients:
                 RecipeIngredient.objects.create(
                     recipe=recipe,
-                    ingredient_id=ingredient['id'],
+                    ingredient=ingredient['id'],
                     amount=ingredient['amount']
                 )
         return recipe
@@ -193,16 +189,29 @@ class ShortLinkSerializer(serializers.Serializer):
 
     def get_short_link(self, obj):
         """Формирует короткую ссылку."""
-        short_code = self.generate_short_code(obj.id)
+        short_code = self.get_or_create_short_code(obj)
         request = self.context.get('request')
         domain = request.get_host()
         protocol = 'https' if request.is_secure() else 'http'
         return f'{protocol}://{domain}/s/{short_code}'
 
-    def generate_short_code(self, recipe_id):
+    def get_or_create_short_code(self, recipe):
+        """Получает существующий или создает новый короткий код."""
+        existing_code = ShortCodeRecipe.objects.filter(recipe=recipe).first()
+        if existing_code:
+            return existing_code.shortcode
+
+        return self.generate_short_code(recipe)
+
+    def generate_short_code(self, recipe):
         """Используем часть хеша MD5."""
-        hash_object = hashlib.md5(str(recipe_id).encode())
-        return hash_object.hexdigest()[:6]
+        hash_object = hashlib.md5(str(recipe.id).encode())
+        short_code = hash_object.hexdigest()[:6]
+        ShortCodeRecipe.objects.create(
+            recipe=recipe,
+            shortcode=short_code
+        )
+        return short_code
 
     def to_representation(self, instance):
         """Меняем short_link на short-link, для соответствия redoc"""

@@ -8,6 +8,7 @@ from .constants import (
     MEASUREMENT_UNIT_MAX_LENGTH,
     RECIPE_NAME_MAX_LENGTH,
     TAG_MAX_LENGTH,
+    SHORT_CODE_LENGTH
 )
 
 
@@ -192,3 +193,15 @@ class ShoppingList(models.Model):
 
     def __str__(self):
         return f'{self.recipe.name} в списке покупок у {self.user.username}.'
+
+class ShortCodeRecipe(models.Model):
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='shortcode',
+        verbose_name='Рецепт'
+    )
+    shortcode = models.CharField(
+        max_length=SHORT_CODE_LENGTH,
+        verbose_name='Короткий код'
+    )

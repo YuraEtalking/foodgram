@@ -142,6 +142,12 @@ const RecipeCreate = ({ onEdit }) => {
               cooking_time: recipeTime,
               image: recipeFile,
             };
+
+            // ВОТ СЮДА ВСТАВЬТЕ ЛОГИРОВАНИЕ:
+            console.log("Данные для отправки:", data);
+            // Если хотите посмотреть JSON-строку:
+            // console.log("JSON для отправки:", JSON.stringify(data));
+
             api
               .createRecipe(data)
               .then((res) => {
