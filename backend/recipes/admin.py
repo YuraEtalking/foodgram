@@ -1,3 +1,4 @@
+"""Модуль для админки приложения рецептов."""
 from django.contrib import admin
 from django.db.models import Count
 
@@ -7,12 +8,15 @@ from .models import (
     Recipe,
     RecipeIngredient,
     ShoppingList,
+    ShortCodeRecipe,
     Tag
 )
 
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
+    """Админка для модели Favorite."""
+
     list_display = (
         'user',
         'recipe',
@@ -23,6 +27,8 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(ShoppingList)
 class ShoppingListAdmin(admin.ModelAdmin):
+    """Админка для модели ShoppingList."""
+
     list_display = (
         'user',
         'recipe',
@@ -33,6 +39,8 @@ class ShoppingListAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
+    """Админка для модели Ingredient."""
+
     list_display = (
         'name',
         'measurement_unit',
@@ -42,6 +50,8 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
+    """Админка для модели Tag."""
+
     list_display = (
         'name',
         'slug',
@@ -51,6 +61,8 @@ class TagAdmin(admin.ModelAdmin):
 
 
 class RecipeIngredientInline(admin.TabularInline):
+    """Инлайн для ингредиентов в рецепте."""
+
     model = RecipeIngredient
     extra = 1
     min_num = 1
@@ -59,10 +71,10 @@ class RecipeIngredientInline(admin.TabularInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
+    """Админка для модели Recipe."""
+
     list_display = (
-        'id',
         'name',
-        'display_shortcode',
         'author',
         'cooking_time',
         'text',
@@ -79,6 +91,7 @@ class RecipeAdmin(admin.ModelAdmin):
     exclude = ['ingredients']
 
     def get_queryset(self, request):
+        """Возвращает queryset с аннотацией favorites_count."""
         return super().get_queryset(request).prefetch_related(
             'recipeingredient_set__ingredient',
             'tags'
@@ -86,6 +99,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='Ингредиенты')
     def display_ingredients(self, obj):
+        """Возвращает строку с ингредиентами и количеством для рецепта."""
         recipe_ingredients = obj.recipeingredient_set.all()
         return ', '.join(
             f'{r_i.ingredient.name} '
@@ -95,14 +109,23 @@ class RecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='Теги')
     def display_tags(self, obj):
+        """Возвращает строку с тегами рецепта."""
         return ', '.join(
             tag.name for tag in obj.tags.all())
 
     @admin.display(description='В избранном', ordering='favorites_count')
     def favorites_count(self, obj):
+        """Возвращает количество добавлений в избранное."""
         return obj.favorites_count
 
-    def display_shortcode(self, obj):
-        shortcode_obj = obj.shortcode.first()
-        return shortcode_obj.shortcode if shortcode_obj else 'Нет кода'
-    display_shortcode.short_description = 'Короткий код'
+
+@admin.register(ShortCodeRecipe)
+class ShortCodeRecipeAdmin(admin.ModelAdmin):
+    """Админка для модели ShortCodeRecipe."""
+
+    list_display = (
+        'recipe',
+        'shortcode',
+        'recipe_id',
+    )
+    search_fields = ['recipe__name']

@@ -1,15 +1,9 @@
 """Представления для приложения рецептов."""
-import hashlib
-
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import (
-    filters,
-    status,
-    viewsets
-)
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -23,8 +17,7 @@ from api.serializers import (
     ShortLinkSerializer,
     TagSerializer
 )
-from recipes.filters import RecipeFilter
-from recipes.pagination import LimitPageNumberPagination
+from recipes.filters import IngredientFilter, RecipeFilter
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -34,6 +27,7 @@ from recipes.models import (
     Tag,
     ShortCodeRecipe
 )
+from recipes.pagination import LimitPageNumberPagination
 
 
 class RecipeShortLinkView(APIView):
@@ -53,6 +47,7 @@ class RecipeShortLinkView(APIView):
                 {'error': 'Рецепт не найден'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
 
 class ShortLinkRedirectView(APIView):
     """Перенаправляет по короткой ссылке на рецепт."""
@@ -198,8 +193,8 @@ class IngredientViewSet(viewsets.ModelViewSet):
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
     http_method_names = ['get']
 
 

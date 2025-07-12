@@ -1,3 +1,4 @@
+"""Модуль для админки приложения пользователей."""
 from django.contrib import admin
 
 from .models import Subscription, User
@@ -5,6 +6,7 @@ from .models import Subscription, User
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
+    """Админка для модели User"""
     list_display = (
         'email',
         'username',
@@ -20,6 +22,8 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
+    """Админка для модели Subscription"""
+
     list_display = (
         'user',
         'author',

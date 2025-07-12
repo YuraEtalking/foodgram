@@ -1,4 +1,4 @@
-"""Модуль, предоставляющий сериализаторы для пользователей и рецептов."""
+"""Модуль экспортирует сериализаторы для пользователей и рецептов."""
 from .fields import Base64ImageField
 from .recipes import (
     IngredientSerializer,

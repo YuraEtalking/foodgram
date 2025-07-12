@@ -1,0 +1,50 @@
+version: '3'
+
+volumes:
+  pg_data:
+  static:
+  media:
+  data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+
+services:
+  db:
+    image: postgres:13
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  backend:
+    image: etalking/foodgram_backend
+    env_file: .env
+    volumes:
+      - static:/backend_static
+      - media:/app/media
+      - data:/app/data
+    depends_on:
+      - db
+
+  frontend:
+    env_file: .env
+    image: etalking/foodgram_frontend
+    command: cp -r /app/build/. /static/
+    volumes:
+      - static:/static
+    depends_on:
+      - backend
+
+  gateway:
+    image: etalking/foodgram_gateway
+    env_file: .env
+    ports:
+      - 8000:80
+    volumes:
+      - static:/static
+      - media:/media
+    depends_on:
+      - frontend
+      - backend

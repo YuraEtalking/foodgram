@@ -1,8 +1,6 @@
 """Модуль импорта данных из csv в базу данных"""
 import csv
-import os
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from recipes.models import Ingredient, Tag
@@ -17,8 +15,6 @@ class Command(BaseCommand):
 
     def import_ingredients(self):
         """Импорт ингредиентов"""
-        # BASE_DIR = settings.BASE_DIR
-        # csv_path = os.path.join(BASE_DIR, '..', 'data', 'ingredients.csv')
         csv_path = '/app/data/ingredients.csv'
 
         with open(csv_path, encoding='utf-8') as file:
@@ -37,8 +33,6 @@ class Command(BaseCommand):
 
     def import_tags(self):
         """Импорт ингредиентов"""
-        # BASE_DIR = settings.BASE_DIR
-        # csv_path = os.path.join(BASE_DIR, '..', 'data', 'tags.csv')
         csv_path = '/app/data/tags.csv'
 
         with open(csv_path, encoding='utf-8') as file:

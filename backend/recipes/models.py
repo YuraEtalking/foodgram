@@ -1,3 +1,4 @@
+"""Модуль моделей для приложения рецептов."""
 from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -16,6 +17,8 @@ User = get_user_model()
 
 
 class Tag(models.Model):
+    """Модель тегов."""
+
     name = models.CharField(
         max_length=TAG_MAX_LENGTH,
         verbose_name='Тег',
@@ -45,6 +48,8 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
+    """Модель ингридиентов."""
+
     name = models.CharField(
         max_length=INGREDIENT_MAX_LENGTH,
         verbose_name='Название'
@@ -64,6 +69,8 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
+    """Модель рецептов."""
+
     tags = models.ManyToManyField(
         Tag,
         verbose_name='Теги',
@@ -110,6 +117,8 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
+    """Модель, для связи между рецептом и ингредиентом с указанием кол-ва."""
+
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(
         Ingredient,
@@ -130,6 +139,8 @@ class RecipeIngredient(models.Model):
 
 
 class Favorite(models.Model):
+    """Модель избранного."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -163,6 +174,8 @@ class Favorite(models.Model):
 
 
 class ShoppingList(models.Model):
+    """Модель списка покупок."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -194,7 +207,10 @@ class ShoppingList(models.Model):
     def __str__(self):
         return f'{self.recipe.name} в списке покупок у {self.user.username}.'
 
+
 class ShortCodeRecipe(models.Model):
+    """Модель кодов для коротких ссылок."""
+
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
@@ -205,3 +221,7 @@ class ShortCodeRecipe(models.Model):
         max_length=SHORT_CODE_LENGTH,
         verbose_name='Короткий код'
     )
+
+    class Meta:
+        verbose_name = 'Короткий код'
+        verbose_name_plural = 'Короткие коды'
