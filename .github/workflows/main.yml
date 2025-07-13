@@ -76,6 +76,7 @@ jobs:
           cd frontend/
           npm ci --legacy-peer-deps
 
+# Не стал включать, так как вызывает ошибку ReferenceError: clearImmediate is not defined
 #      - name: Test frontend
 #        run: |
 #          cd frontend/
