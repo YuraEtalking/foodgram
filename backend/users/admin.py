@@ -7,6 +7,7 @@ from .models import Subscription, User
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     """Админка для модели User"""
+
     list_display = (
         'email',
         'username',
