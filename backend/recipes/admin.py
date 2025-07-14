@@ -2,6 +2,7 @@
 from django.contrib import admin
 from django.db.models import Count
 
+# from .constants import SHORT_TEXT_IN_ADMIN_LENGTH
 from .models import (
     Ingredient,
     Favorite,
@@ -69,6 +70,7 @@ class RecipeIngredientInline(admin.TabularInline):
     fields = ['ingredient', 'amount']
 
 
+# Скрыл некоторые поля, что бы не перегружать таблицу в админке.
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     """Админка для модели Recipe."""
@@ -76,11 +78,11 @@ class RecipeAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'author',
-        'cooking_time',
-        'text',
+        # 'cooking_time',
+        # 'display_text',
         'image',
-        'display_ingredients',
-        'display_tags',
+        # 'display_ingredients',
+        # 'display_tags',
         'favorites_count',
         'created_at',
         'updated_at',
@@ -97,26 +99,32 @@ class RecipeAdmin(admin.ModelAdmin):
             'tags'
         ).annotate(favorites_count=Count('favorited_by'))
 
-    @admin.display(description='Ингредиенты')
-    def display_ingredients(self, obj):
-        """Возвращает строку с ингредиентами и количеством для рецепта."""
-        recipe_ingredients = obj.recipeingredient_set.all()
-        return ', '.join(
-            f'{r_i.ingredient.name} '
-            f'({r_i.amount} {r_i.ingredient.measurement_unit})'
-            for r_i in recipe_ingredients
-        )
+    # @admin.display(description='Ингредиенты')
+    # def display_ingredients(self, obj):
+    #     """Возвращает строку с ингредиентами и количеством для рецепта."""
+    #     recipe_ingredients = obj.recipeingredient_set.all()
+    #     return ', '.join(
+    #         f'{r_i.ingredient.name} '
+    #         f'({r_i.amount} {r_i.ingredient.measurement_unit})'
+    #         for r_i in recipe_ingredients
+    #     )
 
-    @admin.display(description='Теги')
-    def display_tags(self, obj):
-        """Возвращает строку с тегами рецепта."""
-        return ', '.join(
-            tag.name for tag in obj.tags.all())
+    # @admin.display(description='Теги')
+    # def display_tags(self, obj):
+    #     """Возвращает строку с тегами рецепта."""
+    #     return ', '.join(
+    #         tag.name for tag in obj.tags.all())
 
     @admin.display(description='В избранном', ordering='favorites_count')
     def favorites_count(self, obj):
         """Возвращает количество добавлений в избранное."""
         return obj.favorites_count
+
+    # @admin.display(description='Описание')
+    # def display_text(self, obj):
+    #     """Усекает текст описания"""
+    #     return ((obj.text[:SHORT_TEXT_IN_ADMIN_LENGTH] + '...')
+    #             if len(obj.text) > SHORT_TEXT_IN_ADMIN_LENGTH else obj.text)
 
 
 @admin.register(ShortCodeRecipe)

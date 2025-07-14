@@ -154,8 +154,6 @@ jobs:
             sudo docker compose -f docker-compose.production.yml down
             sudo docker compose -f docker-compose.production.yml up -d
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-            # Импорт ингридиентов и тегов в бд.
-            sudo docker compose -f docker-compose.production.yml exec backend python manage.py import_from_csv_to_db
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input
 
   send_message:
