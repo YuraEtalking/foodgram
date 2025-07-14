@@ -39,7 +39,7 @@ const Technologies = () => {
           <div className={styles.text}>
             <ul className={styles.textItem}>
               <li className={styles.textItem}>
-                React — библиотека для создания одностраничных приложений (SPA).
+                React — фреймворк для создания одностраничных приложений (SPA).
               </li>
             </ul>
           </div>

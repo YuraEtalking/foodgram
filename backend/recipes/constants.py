@@ -17,3 +17,6 @@ PAGINATION_PAGE_SIZE: int = 6
 
 # Длинна кода для короткой ссылки.
 SHORT_CODE_LENGTH: int = 6
+
+# Длинна текста описания в админке.
+SHORT_TEXT_IN_ADMIN_LENGTH: int = 50
