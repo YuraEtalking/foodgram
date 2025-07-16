@@ -33,7 +33,7 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели RecipeIngredient"""
 
-    id = serializers.ReadOnlyField(source='ingredient.id')
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
@@ -75,12 +75,11 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
     def check_user_relation(self, obj, relation_name):
         """Существует ли запись в отношении relation_name для пользователя."""
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return getattr(
-                obj,
-                relation_name
-            ).filter(user=request.user).exists()
-        return False
+        return (request and request.user.is_authenticated
+                and getattr(
+                    obj,
+                    relation_name
+                ).filter(user=request.user).exists())
 
     def get_is_favorited(self, obj):
         """Проверяем находится ли рецепт в избранном."""
@@ -91,15 +90,15 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
         return self.check_user_relation(obj, 'in_shopping_lists')
 
 
-class IngredientAmountSerializer(serializers.Serializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField(min_value=1)
+# class IngredientAmountSerializer(serializers.Serializer):
+#     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+#     amount = serializers.IntegerField(min_value=1)
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания рецепта."""
 
-    ingredients = IngredientAmountSerializer(many=True, write_only=True)
+    ingredients = RecipeIngredientSerializer(many=True, write_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
