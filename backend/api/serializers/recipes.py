@@ -90,11 +90,6 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
         return self.check_user_relation(obj, 'in_shopping_lists')
 
 
-# class IngredientAmountSerializer(serializers.Serializer):
-#     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-#     amount = serializers.IntegerField(min_value=1)
-
-
 class RecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания рецепта."""
 
@@ -103,7 +98,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True,
         required=True,
-        allow_empty=False
+        # allow_empty=False
     )
     image = Base64ImageField(required=True)
 
@@ -123,18 +118,23 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'cooking_time': {'required': True},
         }
 
-    def validate_ingredients(self, value):
-        """Дополнительная валидация для ingredients"""
-        if not value:
-            raise serializers.ValidationError(
-                'Список ингредиентов не может быть пустым')
+    def validate(self, value):
+        """Валидация уникальности и наличия данных в ingredients и tags"""
+        for field in ('ingredients', 'tags'):
+            if field in value:
+                if not value[field]:
+                    raise serializers.ValidationError(
+                        {field: f'В поле '
+                                f'"{field}" список не может быть пустым.'})
 
-        for ingredient in value:
-            if 'id' not in ingredient or 'amount' not in ingredient:
-                raise serializers.ValidationError(
-                    'Каждый ингредиент должен содержать "id" и "amount"'
-                )
+                all_id = [i['id'] for i in value[field]]
+                if len(set(all_id)) != len(all_id):
+                    raise serializers.ValidationError(
+                        {field: f'В поле '
+                                f'"{field}" элементы не могут повторяться.'})
+
         return value
+
 
     def create(self, validated_data):
         """Переопределяем create для обработки связанных данных."""
