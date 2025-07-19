@@ -5,7 +5,10 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticatedOrReadOnly,
+    IsAuthenticated
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,6 +20,7 @@ from api.serializers import (
     ShortLinkSerializer,
     TagSerializer
 )
+from api.permissions import IsAuthorOrReadOnly
 from recipes.filters import IngredientFilter, RecipeFilter
 from recipes.models import (
     Favorite,
@@ -24,8 +28,7 @@ from recipes.models import (
     Recipe,
     RecipeIngredient,
     ShoppingList,
-    Tag,
-    ShortCodeRecipe
+    Tag
 )
 from recipes.pagination import LimitPageNumberPagination
 
@@ -49,38 +52,30 @@ class RecipeShortLinkView(APIView):
             )
 
 
-class ShortLinkRedirectView(APIView):
-    """Перенаправляет по короткой ссылке на рецепт."""
-
-    def get(self, request, short_code):
-        from django.http import HttpResponseRedirect
-        recipe = ShortCodeRecipe.objects.filter(shortcode=short_code).first()
-        if recipe is None:
-            return Response({'error': 'Рецепт не найден'},
-                            status=status.HTTP_404_NOT_FOUND)
-        recipe_id = recipe.recipe.id
-        return HttpResponseRedirect(
-            request.build_absolute_uri(f'/recipes/{recipe_id}')
-        )
+# class ShortLinkRedirectView(APIView):
+#     """Перенаправляет по короткой ссылке на рецепт."""
+#
+#     def get(self, request, short_code):
+#         from django.http import HttpResponseRedirect
+#         recipe = Recipe.objects.filter(shortcode=short_code).first()
+#         if recipe is None:
+#             return Response({'error': 'Рецепт не найден'},
+#                             status=status.HTTP_404_NOT_FOUND)
+#         recipe_id = recipe.id
+#         return HttpResponseRedirect(
+#             request.build_absolute_uri(f'/recipes/{recipe_id}')
+#         )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """Представление для рецептов."""
 
     queryset = Recipe.objects.all()
+    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
     pagination_class = LimitPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
-
-    def get_permissions(self):
-        """Возвращает разрешения в зависимости от действия."""
-        if self.action in ['list', 'retrieve']:
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-
-        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         """Возвращает сериализатор в зависимости от действия."""
@@ -96,21 +91,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_list(self, request):
         """Обрабатывает GET-запрос для скачивания списка покупок."""
-        shopping_list_recipe = ShoppingList.objects.filter(
-            user=request.user
-        ).values_list('recipe_id', flat=True)
 
-        ingredients = RecipeIngredient.objects.filter(
-            recipe_id__in=shopping_list_recipe
-        ).values(
-            'ingredient__name',
-            'ingredient__measurement_unit'
-        ).annotate(
-            total_amount=Sum('amount')
-        ).order_by('ingredient__name')
+        ingredients = (
+            RecipeIngredient.objects.filter(
+                recipe__in_shopping_lists__user=request.user
+            ).values(
+                'ingredient__name',
+                'ingredient__measurement_unit'
+            ).annotate(
+                total_amount=Sum('amount')
+            ).order_by('ingredient__name')
+        )
 
         shopping_list_txt = 'Список покупок:\n\n'
-
         for ingredient in ingredients:
             shopping_list_txt += (
                 f'• {ingredient["ingredient__name"]} - '
@@ -178,14 +171,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 user=request.user,
                 recipe=recipe
             )
-
-            if obj:
-                obj.delete()
+            deleted_count, _ = obj.delete()
+            if deleted_count:
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response(
-                {'error': f'Рецепта нет в {message}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
 
 class IngredientViewSet(viewsets.ModelViewSet):

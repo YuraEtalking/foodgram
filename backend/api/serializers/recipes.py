@@ -1,6 +1,5 @@
 """Сериализаторы для приложения рецептов."""
-import hashlib
-
+from django.db import transaction
 from rest_framework import serializers
 
 from .fields import Base64ImageField
@@ -8,10 +7,9 @@ from recipes.models import (
     Ingredient,
     Recipe,
     RecipeIngredient,
-    Tag,
-    ShortCodeRecipe
+    Tag
 )
-from .users import CustomUserSerializer
+from .users import UserDetailSerializer
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -33,15 +31,29 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели RecipeIngredient"""
 
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredient.objects.all(),
+        source='ingredient',
+        write_only=True
+    )
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
     )
+    ingredient_id = serializers.ReadOnlyField(
+        source='ingredient.id',
+        read_only=True
+    )
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'name', 'measurement_unit', 'amount')
+        fields = ('id', 'ingredient_id', 'name', 'measurement_unit', 'amount')
+
+    def to_representation(self, instance):
+        """Переопределяем вывод, чтобы id был id ингредиента"""
+        rep = super().to_representation(instance)
+        rep['id'] = rep.pop('ingredient_id')
+        return rep
 
 
 class RecipeReadingSerializer(serializers.ModelSerializer):
@@ -53,7 +65,7 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
         source='recipeingredient_set'
     )
     tags = TagSerializer(many=True, read_only=True)
-    author = CustomUserSerializer(read_only=True)
+    author = UserDetailSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -93,12 +105,11 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
 class RecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания рецепта."""
 
-    ingredients = RecipeIngredientSerializer(many=True, write_only=True)
+    ingredients = RecipeIngredientSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
         required=True,
-        # allow_empty=False
     )
     image = Base64ImageField(required=True)
 
@@ -127,7 +138,11 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                         {field: f'В поле '
                                 f'"{field}" список не может быть пустым.'})
 
-                all_id = [i['id'] for i in value[field]]
+                if field == 'ingredients':
+                    print(f'{value[field]}')
+                    all_id = [i['ingredient'].id for i in value[field]]
+                else:
+                    all_id = [i.id for i in value[field]]
                 if len(set(all_id)) != len(all_id):
                     raise serializers.ValidationError(
                         {field: f'В поле '
@@ -135,22 +150,28 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
         return value
 
+    def add_ingredients_to_recipe(self, ingredients, recipe):
+        """Вспомогательная функция для методов create и update"""
+        RecipeIngredient.objects.bulk_create([
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient=ingredient['ingredient'],
+                amount=ingredient['amount']
+            ) for ingredient in ingredients
+        ])
 
     def create(self, validated_data):
         """Переопределяем create для обработки связанных данных."""
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 
-        validated_data['author'] = self.context['request'].user
-        recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
+        with transaction.atomic():
+            validated_data['author'] = self.context['request'].user
+            recipe = Recipe.objects.create(**validated_data)
+            recipe.tags.set(tags)
 
-        for ingredient in ingredients:
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=ingredient['id'],
-                amount=ingredient['amount']
-            )
+            self.add_ingredients_to_recipe(ingredients, recipe)
+
         return recipe
 
     def update(self, recipe, validated_data):
@@ -158,22 +179,13 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients', None)
         tags = validated_data.pop('tags', None)
 
-        for attr, value in validated_data.items():
-            setattr(recipe, attr, value)
-        recipe.save()
-
-        if tags is not None:
+        with transaction.atomic():
+            recipe = super().update(recipe, validated_data)
             recipe.tags.set(tags)
+            recipe.ingredients.clear()
 
-        if ingredients is not None:
-            recipe.recipeingredient_set.all().delete()
+            self.add_ingredients_to_recipe(ingredients, recipe)
 
-            for ingredient in ingredients:
-                RecipeIngredient.objects.create(
-                    recipe=recipe,
-                    ingredient=ingredient['id'],
-                    amount=ingredient['amount']
-                )
         return recipe
 
     def to_representation(self, recipe):
@@ -184,33 +196,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 class ShortLinkSerializer(serializers.Serializer):
     """Сериализатор для формирования короткой ссылки на рецепт."""
 
-    short_link = serializers.SerializerMethodField(source='*')
+    short_link = serializers.SerializerMethodField()
 
     def get_short_link(self, obj):
         """Формирует короткую ссылку."""
-        short_code = self.get_or_create_short_code(obj)
+        if not obj.shortcode:
+            obj.save()
         request = self.context.get('request')
         domain = request.get_host()
         protocol = 'https' if request.is_secure() else 'http'
-        return f'{protocol}://{domain}/s/{short_code}'
+        return f'{protocol}://{domain}/s/{obj.shortcode}'
 
-    def get_or_create_short_code(self, recipe):
-        """Получает существующий или создает новый короткий код."""
-        existing_code = ShortCodeRecipe.objects.filter(recipe=recipe).first()
-        if existing_code:
-            return existing_code.shortcode
-
-        return self.generate_short_code(recipe)
-
-    def generate_short_code(self, recipe):
-        """Используем часть хеша MD5."""
-        hash_object = hashlib.md5(str(recipe.id).encode())
-        short_code = hash_object.hexdigest()[:6]
-        ShortCodeRecipe.objects.create(
-            recipe=recipe,
-            shortcode=short_code
-        )
-        return short_code
 
     def to_representation(self, instance):
         """Меняем short_link на short-link, для соответствия redoc"""

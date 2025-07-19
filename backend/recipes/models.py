@@ -1,4 +1,6 @@
 """Модуль моделей для приложения рецептов."""
+import hashlib
+
 from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -63,6 +65,12 @@ class Ingredient(models.Model):
         verbose_name = 'ингредиент'
         verbose_name_plural = 'Ингредиенты'
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                name='unique_name_measurement_unit',
+                fields=['name', 'measurement_unit']
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -107,6 +115,13 @@ class Recipe(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    shortcode = models.CharField(
+        max_length=SHORT_CODE_LENGTH,
+        verbose_name='Короткий код',
+        blank=True,
+        null=True,
+    )
+
     class Meta:
         verbose_name = 'рецепт'
         verbose_name_plural = 'Рецепты'
@@ -115,6 +130,14 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.shortcode:
+            super().save(*args, **kwargs)
+            hash_object = hashlib.md5(str(self.id).encode())
+            self.shortcode = hash_object.hexdigest()[:6]
+            Recipe.objects.filter(pk=self.pk).update(shortcode=self.shortcode)
+        else:
+            super().save(*args, **kwargs)
 
 class RecipeIngredient(models.Model):
     """Модель, для связи между рецептом и ингредиентом с указанием кол-ва."""
@@ -206,22 +229,3 @@ class ShoppingList(models.Model):
 
     def __str__(self):
         return f'{self.recipe.name} в списке покупок у {self.user.username}.'
-
-
-class ShortCodeRecipe(models.Model):
-    """Модель кодов для коротких ссылок."""
-
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='shortcode',
-        verbose_name='Рецепт'
-    )
-    shortcode = models.CharField(
-        max_length=SHORT_CODE_LENGTH,
-        verbose_name='Короткий код'
-    )
-
-    class Meta:
-        verbose_name = 'Короткий код'
-        verbose_name_plural = 'Короткие коды'
