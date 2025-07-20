@@ -10,8 +10,7 @@ from .recipes import (
 )
 from .users import (
     AvatarUpdateSerializer,
-    CustomUserCreateSerializer,
-    CustomUserSerializer,
+    UserDetailSerializer,
     SubscriptionsSerializer
 )
 
@@ -19,8 +18,7 @@ from .users import (
 __all__ = [
     'AvatarUpdateSerializer',
     'Base64ImageField',
-    'CustomUserCreateSerializer',
-    'CustomUserSerializer',
+    'UserDetailSerializer',
     'IngredientSerializer',
     'RecipeCreateSerializer',
     'RecipeReadingSerializer',

@@ -1,6 +1,6 @@
 """Сериализаторы для приложения users"""
 from django.contrib.auth import get_user_model
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from .fields import Base64ImageField
@@ -9,22 +9,7 @@ from .fields import Base64ImageField
 User = get_user_model()
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
-    """Переопределяем поля и модель для регистрации новых пользователей"""
-
-    class Meta(UserCreateSerializer.Meta):
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'password'
-        )
-
-
-class CustomUserSerializer(UserSerializer):
+class UserDetailSerializer(UserSerializer):
     """Сериализатор для пользователей."""
 
     avatar = serializers.SerializerMethodField(
@@ -48,9 +33,8 @@ class CustomUserSerializer(UserSerializer):
     def get_is_subscribed(self, obj):
         """Возвращает, подписку автора на пользователя"""
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.subscribers.filter(user=request.user).exists()
-        return False
+        return (request and request.user.is_authenticated
+                and obj.subscribers.filter(user=request.user).exists())
 
     def get_avatar_url(self, obj):
         """Возвращает URL аватара пользователя."""
@@ -58,14 +42,14 @@ class CustomUserSerializer(UserSerializer):
             return obj.avatar.url
 
 
-class SubscriptionsSerializer(CustomUserSerializer):
+class SubscriptionsSerializer(UserDetailSerializer):
     """Сериализатор с добавлением полей для выдачи подписок пользователя."""
 
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta(CustomUserSerializer.Meta):
-        fields = CustomUserSerializer.Meta.fields + (
+    class Meta(UserDetailSerializer.Meta):
+        fields = UserDetailSerializer.Meta.fields + (
             'recipes',
             'recipes_count',
         )
@@ -105,3 +89,8 @@ class AvatarUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('avatar',)
+
+    def validate_avatar(self, value):
+        if not value:
+            raise serializers.ValidationError('Аватар не может быть пустым.')
+        return value
