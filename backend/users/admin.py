@@ -1,11 +1,12 @@
 """Модуль для админки приложения пользователей."""
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import Subscription, User
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(BaseUserAdmin):
     """Админка для модели User"""
 
     list_display = (

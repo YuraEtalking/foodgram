@@ -9,7 +9,6 @@ from .models import (
     Recipe,
     RecipeIngredient,
     ShoppingList,
-    ShortCodeRecipe,
     Tag
 )
 
@@ -125,15 +124,3 @@ class RecipeAdmin(admin.ModelAdmin):
     #     """Усекает текст описания"""
     #     return ((obj.text[:SHORT_TEXT_IN_ADMIN_LENGTH] + '...')
     #             if len(obj.text) > SHORT_TEXT_IN_ADMIN_LENGTH else obj.text)
-
-
-@admin.register(ShortCodeRecipe)
-class ShortCodeRecipeAdmin(admin.ModelAdmin):
-    """Админка для модели ShortCodeRecipe."""
-
-    list_display = (
-        'recipe',
-        'shortcode',
-        'recipe_id',
-    )
-    search_fields = ['recipe__name']

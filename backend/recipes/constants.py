@@ -1,16 +1,34 @@
 """Константы приложения recipes"""
 
-# Максимальная длинна название ингридиента.
-INGREDIENT_MAX_LENGTH: int = 200
+# РЕЦЕПТЫ.
+# Максимальная длинна названия рецепта.
+RECIPE_NAME_MAX_LENGTH: int = 256
+
+# Минимальная и максимальная соответственно длинна поля cooking_time.
+COOKING_TIME_MIN_LENGTH: int = 1
+COOKING_TIME_MAX_LENGTH: int = 32767
+
+
+# ИНГРЕДИЕНТЫ.
+# Максимальная длинна название ингредиента.
+INGREDIENT_MAX_LENGTH: int = 128
 
 # Максимальная длинна единицы измерения.
-MEASUREMENT_UNIT_MAX_LENGTH: int = 50
+MEASUREMENT_UNIT_MAX_LENGTH: int = 64
 
+# Минимальная и максимальная соответственно длинна поля amount.
+AMOUNT_MIN_LENGTH: int = 1
+AMOUNT_MAX_LENGTH: int = 32767
+
+
+# ТЕГИ.
 # Максимальная длинна тега.
-TAG_MAX_LENGTH: int = 50
+TAG_MAX_LENGTH: int = 32
 
-# Максимальная длинна названия рецепта.
-RECIPE_NAME_MAX_LENGTH: int = 200
+
+# ПРОЧИЕ.
+# ID админа.
+ADMIN_ID: int = 1
 
 # Объектов на страницу.
 PAGINATION_PAGE_SIZE: int = 6

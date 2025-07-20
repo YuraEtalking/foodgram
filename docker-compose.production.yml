@@ -4,12 +4,6 @@ volumes:
   pg_data:
   static:
   media:
-  data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data
 
 services:
   db:

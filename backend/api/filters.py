@@ -1,6 +1,7 @@
 """Модуль фильтров."""
 from django_filters import rest_framework as filters
-from .models import Ingredient, Recipe
+
+from recipes.models import Ingredient, Recipe
 
 
 class IngredientFilter(filters.FilterSet):
@@ -20,7 +21,6 @@ class RecipeFilter(filters.FilterSet):
     is_in_shopping_cart = filters.BooleanFilter(
         method='filter_is_in_shopping_cart'
     )
-    author = filters.NumberFilter(field_name='author', lookup_expr='exact')
     tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
 
     class Meta:
