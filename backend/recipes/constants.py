@@ -20,6 +20,7 @@ MEASUREMENT_UNIT_MAX_LENGTH: int = 64
 AMOUNT_MIN_LENGTH: int = 1
 AMOUNT_MAX_LENGTH: int = 32767
 
+
 # ТЕГИ.
 # Максимальная длинна тега.
 TAG_MAX_LENGTH: int = 32

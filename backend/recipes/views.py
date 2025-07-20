@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 from .models import Recipe
 
+
 class ShortLinkRedirectView(APIView):
     """Перенаправляет по короткой ссылке на рецепт."""
 

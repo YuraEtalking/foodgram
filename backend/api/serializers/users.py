@@ -1,6 +1,6 @@
 """Сериализаторы для приложения users"""
 from django.contrib.auth import get_user_model
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from .fields import Base64ImageField
@@ -34,7 +34,7 @@ class UserDetailSerializer(UserSerializer):
         """Возвращает, подписку автора на пользователя"""
         request = self.context.get('request')
         return (request and request.user.is_authenticated
-            and obj.subscribers.filter(user=request.user).exists())
+                and obj.subscribers.filter(user=request.user).exists())
 
     def get_avatar_url(self, obj):
         """Возвращает URL аватара пользователя."""

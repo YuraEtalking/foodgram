@@ -66,8 +66,8 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
     )
     tags = TagSerializer(many=True, read_only=True)
     author = UserDetailSerializer(read_only=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -92,14 +92,6 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
                     obj,
                     relation_name
                 ).filter(user=request.user).exists())
-
-    def get_is_favorited(self, obj):
-        """Проверяем находится ли рецепт в избранном."""
-        return self.check_user_relation(obj, 'favorited_by')
-
-    def get_is_in_shopping_cart(self, obj):
-        """Проверяем находится ли рецепт в списке покупок."""
-        return self.check_user_relation(obj, 'in_shopping_lists')
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -196,17 +188,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 class ShortLinkSerializer(serializers.Serializer):
     """Сериализатор для формирования короткой ссылки на рецепт."""
 
-    short_link = serializers.SerializerMethodField()
-
-    def get_short_link(self, obj):
-        """Формирует короткую ссылку."""
-        if not obj.shortcode:
-            obj.save()
-        request = self.context.get('request')
-        domain = request.get_host()
-        protocol = 'https' if request.is_secure() else 'http'
-        return f'{protocol}://{domain}/s/{obj.shortcode}'
-
+    short_link = serializers.CharField()
 
     def to_representation(self, instance):
         """Меняем short_link на short-link, для соответствия redoc"""

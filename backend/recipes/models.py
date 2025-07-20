@@ -146,6 +146,7 @@ class Recipe(models.Model):
         else:
             super().save(*args, **kwargs)
 
+
 class RecipeIngredient(models.Model):
     """Модель, для связи между рецептом и ингредиентом с указанием кол-ва."""
 
@@ -174,7 +175,18 @@ class RecipeIngredient(models.Model):
         ]
 
 
-class Favorite(models.Model):
+class UserRecipeBase(models.Model):
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата добавления'
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ['-created_at']
+
+
+class Favorite(UserRecipeBase):
     """Модель избранного."""
 
     user = models.ForeignKey(
@@ -188,10 +200,6 @@ class Favorite(models.Model):
         on_delete=models.CASCADE,
         related_name='favorited_by',
         verbose_name='Рецепт'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата добавления'
     )
 
     class Meta:
@@ -209,7 +217,7 @@ class Favorite(models.Model):
         return f'{self.recipe.name} в избранном у {self.user.username}.'
 
 
-class ShoppingList(models.Model):
+class ShoppingList(UserRecipeBase):
     """Модель списка покупок."""
 
     user = models.ForeignKey(
@@ -223,10 +231,6 @@ class ShoppingList(models.Model):
         on_delete=models.CASCADE,
         related_name='in_shopping_lists',
         verbose_name='Рецепт'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата добавления'
     )
 
     class Meta:

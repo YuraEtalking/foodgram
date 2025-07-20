@@ -59,4 +59,3 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f'Импортированно: {imported_data} записей тегов.')
         )
-False

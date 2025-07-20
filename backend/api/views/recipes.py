@@ -1,5 +1,5 @@
 """Представления для приложения рецептов."""
-from django.db.models import Sum
+from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,7 +10,6 @@ from rest_framework.permissions import (
     IsAuthenticated
 )
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from api.serializers import (
     IngredientSerializer,
@@ -33,25 +32,6 @@ from recipes.models import (
 from api.pagination import LimitPageNumberPagination
 
 
-class RecipeShortLinkView(APIView):
-    """Возвращает короткую ссылку на рецепт."""
-
-    def get(self, request, pk):
-        """Обрабатывает GET-запрос для получения короткой ссылки на рецепт."""
-        try:
-            recipe = Recipe.objects.get(pk=pk)
-            serializer = ShortLinkSerializer(
-                recipe,
-                context={'request': request}
-            )
-            return Response(serializer.data)
-        except Recipe.DoesNotExist:
-            return Response(
-                {'error': 'Рецепт не найден'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-
 class RecipeViewSet(viewsets.ModelViewSet):
     """Представление для рецептов."""
 
@@ -68,6 +48,57 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeCreateSerializer
         return RecipeReadingSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=models.Exists(
+                    Favorite.objects.filter(
+                        user=user,
+                        recipe=models.OuterRef('id')
+                    )
+                ),
+                is_in_shopping_cart=models.Exists(
+                    ShoppingList.objects.filter(
+                        user=user,
+                        recipe=models.OuterRef('id')
+                    )
+                )
+            )
+        else:
+            queryset = queryset.annotate(
+                is_favorited=models.Value(
+                    False,
+                    output_field=models.BooleanField()
+                ),
+                is_in_shopping_cart=models.Value(
+                    False,
+                    output_field=models.BooleanField()
+                )
+            )
+        return queryset
+
+    @action(
+        detail=True,
+        methods=['get'],
+        url_path='get-link'
+    )
+    def get_short_link(self, request, pk):
+        """Обрабатывает GET-запрос для получения короткой ссылки на рецепт."""
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+            domain = request.get_host()
+            protocol = 'https' if request.is_secure() else 'http'
+            link = f'{protocol}://{domain}/s/{recipe.shortcode}'
+            serializer = ShortLinkSerializer({'short_link': link})
+            return Response(serializer.data)
+        except Recipe.DoesNotExist:
+            return Response(
+                {'error': 'Рецепт не найден'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
     @action(
         detail=False,
         methods=['get'],
@@ -76,7 +107,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_list(self, request):
         """Обрабатывает GET-запрос для скачивания списка покупок."""
-
         ingredients = (
             RecipeIngredient.objects.filter(
                 recipe__in_shopping_lists__user=request.user
@@ -84,7 +114,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'ingredient__name',
                 'ingredient__measurement_unit'
             ).annotate(
-                total_amount=Sum('amount')
+                total_amount=models.Sum('amount')
             ).order_by('ingredient__name')
         )
 

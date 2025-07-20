@@ -83,8 +83,8 @@ class UserViewSet(DjoserUserViewSet):
     )
     def subscriptions(self, request):
         subscriptions = User.objects.filter(
-             subscribers__user=request.user
-         )
+            subscribers__user=request.user
+        )
 
         paginator = LimitPageNumberPagination()
         page = paginator.paginate_queryset(subscriptions, request)
