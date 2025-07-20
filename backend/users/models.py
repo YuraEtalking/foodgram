@@ -27,12 +27,10 @@ class User(AbstractUser):
     first_name = models.CharField(
         verbose_name='Имя',
         max_length=FIRST_NAME_MAX_LENGTH,
-        blank=False
     )
     last_name = models.CharField(
         verbose_name='Фамилия',
         max_length=LAST_NAME_MAX_LENGTH,
-        blank=False
     )
     avatar = models.ImageField(
         upload_to='users/',
@@ -46,7 +44,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ['first_name']
+        ordering = ['username']
 
     def __str__(self):
         return self.username

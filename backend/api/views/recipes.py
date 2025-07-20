@@ -21,7 +21,7 @@ from api.serializers import (
     TagSerializer
 )
 from api.permissions import IsAuthorOrReadOnly
-from recipes.filters import IngredientFilter, RecipeFilter
+from api.filters import IngredientFilter, RecipeFilter
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -30,7 +30,7 @@ from recipes.models import (
     ShoppingList,
     Tag
 )
-from recipes.pagination import LimitPageNumberPagination
+from api.pagination import LimitPageNumberPagination
 
 
 class RecipeShortLinkView(APIView):
@@ -50,21 +50,6 @@ class RecipeShortLinkView(APIView):
                 {'error': 'Рецепт не найден'},
                 status=status.HTTP_404_NOT_FOUND
             )
-
-
-# class ShortLinkRedirectView(APIView):
-#     """Перенаправляет по короткой ссылке на рецепт."""
-#
-#     def get(self, request, short_code):
-#         from django.http import HttpResponseRedirect
-#         recipe = Recipe.objects.filter(shortcode=short_code).first()
-#         if recipe is None:
-#             return Response({'error': 'Рецепт не найден'},
-#                             status=status.HTTP_404_NOT_FOUND)
-#         recipe_id = recipe.id
-#         return HttpResponseRedirect(
-#             request.build_absolute_uri(f'/recipes/{recipe_id}')
-#         )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

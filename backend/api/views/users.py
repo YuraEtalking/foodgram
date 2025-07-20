@@ -11,7 +11,7 @@ from api.serializers import (
     UserDetailSerializer,
     SubscriptionsSerializer
 )
-from recipes.pagination import LimitPageNumberPagination
+from api.pagination import LimitPageNumberPagination
 from users.models import Subscription
 
 

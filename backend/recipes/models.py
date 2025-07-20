@@ -1,12 +1,17 @@
 """Модуль моделей для приложения рецептов."""
 import hashlib
 
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.text import slugify
 
 from .constants import (
+    ADMIN_ID,
+    AMOUNT_MAX_LENGTH,
+    AMOUNT_MIN_LENGTH,
+    COOKING_TIME_MAX_LENGTH,
+    COOKING_TIME_MIN_LENGTH,
     INGREDIENT_MAX_LENGTH,
     MEASUREMENT_UNIT_MAX_LENGTH,
     RECIPE_NAME_MAX_LENGTH,
@@ -26,7 +31,7 @@ class Tag(models.Model):
         verbose_name='Тег',
         unique=True,
     )
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, max_length=TAG_MAX_LENGTH,)
 
     class Meta:
         verbose_name = 'тег'
@@ -86,11 +91,10 @@ class Recipe(models.Model):
     )
     author = models.ForeignKey(
         User,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         verbose_name='Автор',
         related_name='recipes',
-        null=True,
-        blank=True,
+        default=ADMIN_ID
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -110,7 +114,10 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Описание')
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления (мин)',
-        validators=[MinValueValidator(1)]
+        validators=[
+            MinValueValidator(COOKING_TIME_MIN_LENGTH),
+            MaxValueValidator(COOKING_TIME_MAX_LENGTH)
+        ]
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -148,7 +155,13 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Ингредиент'
     )
-    amount = models.PositiveSmallIntegerField(verbose_name='Количество')
+    amount = models.PositiveSmallIntegerField(
+        verbose_name='Количество',
+        validators=[
+            MinValueValidator(AMOUNT_MIN_LENGTH),
+            MaxValueValidator(AMOUNT_MAX_LENGTH)
+        ]
+    )
 
     class Meta:
         verbose_name = 'ингредиент'
