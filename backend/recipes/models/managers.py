@@ -3,7 +3,10 @@ from django.db import models
 
 
 class RecipeQuerySet(models.QuerySet):
+    """QuerySet для модели рецептов."""
+
     def with_user_annotations(self, user):
+        """Аннотируем QuerySet избранным и списком покупок."""
         from .favorite import Favorite
         from .shopping_list import ShoppingList
         if user.is_authenticated:
@@ -32,9 +35,14 @@ class RecipeQuerySet(models.QuerySet):
             )
         )
 
+
 class RecipeManager(models.Manager):
+    """Менеджер для модели рецептов"""
+
     def get_queryset(self):
+        """Возвращает RecipeQuerySet для модели рецептов."""
         return RecipeQuerySet(self.model, using=self._db)
 
     def with_user_annotations(self, user):
+        """Возвращает queryset с аннотациями."""
         return self.get_queryset().with_user_annotations(user)

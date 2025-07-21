@@ -12,7 +12,7 @@ class ShortLinkRedirectView(APIView):
         recipe = Recipe.objects.filter(shortcode=short_code).first()
         if recipe is None:
             return HttpResponseRedirect(
-                request.build_absolute_uri(f'/not-found'))
+                request.build_absolute_uri('/not-found'))
         recipe_id = recipe.id
         return HttpResponseRedirect(
             request.build_absolute_uri(f'/recipes/{recipe_id}')
