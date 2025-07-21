@@ -43,7 +43,7 @@ class UserViewSet(DjoserUserViewSet):
             return Response(
                 {'error': 'Нельзя подписаться на себя'},
                 status=status.HTTP_400_BAD_REQUEST)
-        subscription, created = Subscription.objects.get_or_create(
+        _, created = Subscription.objects.get_or_create(
             user=request.user,
             author=author
         )

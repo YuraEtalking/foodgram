@@ -1,5 +1,6 @@
 """Модуль моделей для приложения рецептов."""
 import hashlib
+import time
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
@@ -139,12 +140,11 @@ class Recipe(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.shortcode:
-            super().save(*args, **kwargs)
-            hash_object = hashlib.md5(str(self.id).encode())
+            code_phrase = self.name + str(time.time())
+            hash_object = hashlib.md5(code_phrase.encode())
             self.shortcode = hash_object.hexdigest()[:6]
-            Recipe.objects.filter(pk=self.pk).update(shortcode=self.shortcode)
-        else:
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
 
 
 class RecipeIngredient(models.Model):
