@@ -1,4 +1,4 @@
-"""Представления для приложения рецептов."""
+"""Представления для приложения рецептов в приложении api."""
 from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -11,7 +11,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
-from api.serializers import (
+from ..serializers import (
     IngredientSerializer,
     RecipeCreateSerializer,
     RecipeReadingSerializer,
@@ -19,8 +19,8 @@ from api.serializers import (
     ShortLinkSerializer,
     TagSerializer
 )
-from api.permissions import IsAuthorOrReadOnly
-from api.filters import IngredientFilter, RecipeFilter
+from ..permissions import IsAuthorOrReadOnly
+from ..filters import IngredientFilter, RecipeFilter
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -29,7 +29,7 @@ from recipes.models import (
     ShoppingList,
     Tag
 )
-from api.pagination import LimitPageNumberPagination
+from ..pagination import LimitPageNumberPagination
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -49,35 +49,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return RecipeReadingSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
-        if user.is_authenticated:
-            queryset = queryset.annotate(
-                is_favorited=models.Exists(
-                    Favorite.objects.filter(
-                        user=user,
-                        recipe=models.OuterRef('id')
-                    )
-                ),
-                is_in_shopping_cart=models.Exists(
-                    ShoppingList.objects.filter(
-                        user=user,
-                        recipe=models.OuterRef('id')
-                    )
-                )
-            )
-        else:
-            queryset = queryset.annotate(
-                is_favorited=models.Value(
-                    False,
-                    output_field=models.BooleanField()
-                ),
-                is_in_shopping_cart=models.Value(
-                    False,
-                    output_field=models.BooleanField()
-                )
-            )
-        return queryset
+        return Recipe.objects.with_user_annotations(self.request.user)
 
     @action(
         detail=True,

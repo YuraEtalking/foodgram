@@ -1,3 +1,4 @@
+"""Представления для приложения рецептов."""
 from django.http import HttpResponseRedirect
 from rest_framework.views import APIView
 

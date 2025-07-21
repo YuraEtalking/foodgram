@@ -6,12 +6,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from api.serializers import (
+from ..serializers import (
     AvatarUpdateSerializer,
     UserDetailSerializer,
     SubscriptionsSerializer
 )
-from api.pagination import LimitPageNumberPagination
+from ..pagination import LimitPageNumberPagination
 from users.models import Subscription
 
 
