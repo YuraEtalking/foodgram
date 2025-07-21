@@ -84,13 +84,15 @@ class SubscriptionsSerializer(UserDetailSerializer):
 class AvatarUpdateSerializer(serializers.ModelSerializer):
     """Сериализатор обновления аватара."""
 
-    avatar = Base64ImageField()
+    avatar = Base64ImageField(required=True)
 
     class Meta:
         model = User
         fields = ('avatar',)
 
-    def validate_avatar(self, value):
-        if not value:
-            raise serializers.ValidationError('Аватар не может быть пустым.')
-        return value
+    def validate(self, attrs):
+        if not attrs.get('avatar'):
+            raise serializers.ValidationError(
+                {'avatar': 'Аватар не может быть пустым.'}
+            )
+        return attrs

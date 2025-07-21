@@ -32,17 +32,11 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели RecipeIngredient"""
 
     id = serializers.PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all(),
-        source='ingredient',
-        write_only=True
+        queryset=Ingredient.objects.all()
     )
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
-    )
-    ingredient_id = serializers.ReadOnlyField(
-        source='ingredient.id',
-        read_only=True
     )
 
     class Meta:
@@ -66,8 +60,11 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
     )
     tags = TagSerializer(many=True, read_only=True)
     author = UserDetailSerializer(read_only=True)
-    is_favorited = serializers.BooleanField(read_only=True)
-    is_in_shopping_cart = serializers.BooleanField(read_only=True)
+    is_favorited = serializers.BooleanField(read_only=True, default=False)
+    is_in_shopping_cart = serializers.BooleanField(
+        read_only=True,
+        default=False
+    )
 
     class Meta:
         model = Recipe
@@ -83,15 +80,6 @@ class RecipeReadingSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time',
         )
-
-    def check_user_relation(self, obj, relation_name):
-        """Существует ли запись в отношении relation_name для пользователя."""
-        request = self.context.get('request')
-        return (request and request.user.is_authenticated
-                and getattr(
-                    obj,
-                    relation_name
-                ).filter(user=request.user).exists())
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -124,21 +112,26 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def validate(self, value):
         """Валидация уникальности и наличия данных в ingredients и tags"""
         for field in ('ingredients', 'tags'):
-            if field in value:
-                if not value[field]:
-                    raise serializers.ValidationError(
-                        {field: f'В поле '
-                                f'"{field}" список не может быть пустым.'})
+            if field not in value:
+                raise serializers.ValidationError(
+                    {field: f'Поле "{field}" отсутствует.'}
+                )
 
-                if field == 'ingredients':
-                    print(f'{value[field]}')
-                    all_id = [i['ingredient'].id for i in value[field]]
-                else:
-                    all_id = [i.id for i in value[field]]
-                if len(set(all_id)) != len(all_id):
-                    raise serializers.ValidationError(
-                        {field: f'В поле '
-                                f'"{field}" элементы не могут повторяться.'})
+            if not value[field]:
+                raise serializers.ValidationError(
+                    {field: f'В поле '
+                            f'"{field}" список не может быть пустым.'}
+                )
+
+            if field == 'ingredients':
+                all_id = [i['id'] for i in value[field]]
+            else:
+                all_id = [i.id for i in value[field]]
+            if len(set(all_id)) != len(all_id):
+                raise serializers.ValidationError(
+                    {field: f'В поле '
+                            f'"{field}" элементы не могут повторяться.'}
+                )
 
         return value
 
@@ -147,36 +140,36 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         RecipeIngredient.objects.bulk_create([
             RecipeIngredient(
                 recipe=recipe,
-                ingredient=ingredient['ingredient'],
+                ingredient=ingredient['id'],
                 amount=ingredient['amount']
             ) for ingredient in ingredients
         ])
 
+    @transaction.atomic
     def create(self, validated_data):
         """Переопределяем create для обработки связанных данных."""
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 
-        with transaction.atomic():
-            validated_data['author'] = self.context['request'].user
-            recipe = Recipe.objects.create(**validated_data)
-            recipe.tags.set(tags)
+        validated_data['author'] = self.context['request'].user
+        recipe = Recipe.objects.create(**validated_data)
+        recipe.tags.set(tags)
 
-            self.add_ingredients_to_recipe(ingredients, recipe)
+        self.add_ingredients_to_recipe(ingredients, recipe)
 
         return recipe
 
+    @transaction.atomic
     def update(self, recipe, validated_data):
         """Переопределяем update для обработки обновления связанных данных."""
         ingredients = validated_data.pop('ingredients', None)
         tags = validated_data.pop('tags', None)
 
-        with transaction.atomic():
-            recipe = super().update(recipe, validated_data)
-            recipe.tags.set(tags)
-            recipe.ingredients.clear()
+        recipe = super().update(recipe, validated_data)
+        recipe.tags.set(tags)
+        recipe.ingredients.clear()
 
-            self.add_ingredients_to_recipe(ingredients, recipe)
+        self.add_ingredients_to_recipe(ingredients, recipe)
 
         return recipe
 
