@@ -53,7 +53,7 @@ class Command(BaseCommand):
                     ) for row in reader
                 ], ignore_conflicts=True
             )
-            after_count = Ingredient.objects.count()
+            after_count = Tag.objects.count()
             imported_data = after_count - before_count
         self.stdout.write(
             self.style.SUCCESS(

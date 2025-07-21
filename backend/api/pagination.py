@@ -1,3 +1,4 @@
+"""Модуль пагинатора."""
 from rest_framework.pagination import PageNumberPagination
 
 from recipes.constants import PAGINATION_PAGE_SIZE
