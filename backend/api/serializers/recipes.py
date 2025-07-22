@@ -41,13 +41,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'ingredient_id', 'name', 'measurement_unit', 'amount')
-
-    def to_representation(self, instance):
-        """Переопределяем вывод, чтобы id был id ингредиента"""
-        rep = super().to_representation(instance)
-        rep['id'] = rep.pop('ingredient_id')
-        return rep
+        fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeReadingSerializer(serializers.ModelSerializer):

@@ -1,15 +1,15 @@
 """Модель Recipe"""
-import hashlib
-import time
+import uuid
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
-from django.db import models
+from django.db import IntegrityError, models, transaction
 
 from ..constants import (
     ADMIN_ID,
     COOKING_TIME_MAX_LENGTH,
     COOKING_TIME_MIN_LENGTH,
+    MAXIMUM_NUMBER_ATTEMPTS,
     RECIPE_NAME_MAX_LENGTH,
     SHORT_CODE_LENGTH
 )
@@ -65,6 +65,7 @@ class Recipe(models.Model):
     shortcode = models.CharField(
         max_length=SHORT_CODE_LENGTH,
         verbose_name='Короткий код',
+        unique=True,
         blank=True,
         null=True,
     )
@@ -79,8 +80,14 @@ class Recipe(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.shortcode:
-            code_phrase = self.name + str(time.time())
-            hash_object = hashlib.md5(code_phrase.encode())
-            self.shortcode = hash_object.hexdigest()[:6]
+        """Переопределяем метод save для генерации и добавления shortcode"""
+        max_attempts = MAXIMUM_NUMBER_ATTEMPTS
+        attempt = 0
+        while not self.shortcode and attempt < max_attempts:
+            attempt += 1
+            self.shortcode = str(uuid.uuid4())[:8]
+            if not Recipe.objects.filter(
+                    shortcode=self.shortcode
+            ).exists():
+                break
         super().save(*args, **kwargs)

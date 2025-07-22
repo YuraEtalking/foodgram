@@ -34,7 +34,10 @@ ADMIN_ID: int = 1
 PAGINATION_PAGE_SIZE: int = 6
 
 # Длинна кода для короткой ссылки.
-SHORT_CODE_LENGTH: int = 6
+SHORT_CODE_LENGTH: int = 8
 
 # Длинна текста описания в админке.
 SHORT_TEXT_IN_ADMIN_LENGTH: int = 50
+
+# Максимальное количество попыток сохранить короткий код при ошибке.
+MAXIMUM_NUMBER_ATTEMPTS: int = 10
